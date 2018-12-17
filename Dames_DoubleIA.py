@@ -1,21 +1,27 @@
 from tkinter import *
 import random
-#import time
+import time
+
+
+###                        ###  Prise obligatoire simple
+###         Règles         ###  Vainqueur quand l'adversaire n'a plus de pions
+###                        ###  ou en fonction du nombre de pions lorsque l'un des joueurs ne peut plus bouger
+
 
 # Définition des gestionnaires d'événements :
 
 def simulation():
     global flag
-    for i in range (0,50):
-        tour_joueur(i)
+    while flag < 2:
+        tour_joueur()
         fen1.update()
-        #time.sleep(1)
-        tour_ordinateur(i)
+        #time.sleep(0.5)        # Enlever le # et mettre une durée en secondes pour un affichage lisible
+        tour_ordinateur()
         fen1.update()
-        #time.sleep(1)
+        #time.sleep(0.5)        # Enlever le # et mettre une durée en secondes pour un affichage lisibile
     if flag != 2:
-        draw(i)
-    
+        draw()
+
 
 def new_game():
     global flag, compteur
@@ -83,7 +89,7 @@ def delete_pions(): # Suppression des pions
             can1.delete(i)
 
 
-def tour_joueur(e):
+def tour_joueur():
     global flag, choix_prise, compteur
     if flag == 0:
         compteur = compteur+1
@@ -93,14 +99,16 @@ def tour_joueur(e):
             deplacement_joueur()            # ... déplacer un pion
         "Fin du tour des blancs !"
         if len(can1.find_withtag("computer")) == 0:
-            draw(flag) # On envoie le flag pour avoir un argument
+            draw() 
+        elif flag == 3:
+            "Ne rien faire"
         else:
             flag = 1
     else:
         "Ça n'est pas le tour des blancs"
 
 
-def tour_ordinateur(e):
+def tour_ordinateur():
     global flag, choix_prise, compteur
     if flag == 1:
         compteur = compteur+1
@@ -110,7 +118,9 @@ def tour_ordinateur(e):
             deplacement_ordinateur()        # ... déplacer un pion
         "Fin du tour des noirs !"
         if len(can1.find_withtag("player")) == 0:
-            draw(flag) # On envoie le flag pour avoir un argument
+            draw()
+        elif flag == 3:
+            "Ne rien faire"
         else:
             flag = 0
     else:
@@ -118,47 +128,49 @@ def tour_ordinateur(e):
 
 
 def deplacement_ordinateur():
+    global flag
     # Récupération des identifiants de chaque pion de l'ordinateur
-    pions_ordinateur = can1.find_withtag("computer")
-    # Choix d'un nombre aléatoire
-    a = random.randint(0,len(pions_ordinateur)-1)
-    # Choix d'un pion de l'ordinateur au hasard à l'aide du nombre aléatoire
-    a = pions_ordinateur[a]
-
-    # Récupération des coordonnées de ce pion
-    coords_pionc = can1.coords(a)
-    x0c = coords_pionc[0]
-    y0c = coords_pionc[1]
-    x1c = coords_pionc[2]
-    y1c = coords_pionc[3]
-
-    # Récupération de l'identifiant de la case sur laquelle se trouve le pion
-    case_dupion = can1.find_enclosed(x0c-15,y0c-15,x1c+15,y1c+15)
-    case_dupion = case_dupion[0]
+    pions_ordinateur = list(can1.find_withtag("computer"))
 
     case_possible_ordi = []
-    if case_dupion+5 > 50:          # Voir si on est au bout du damier
-        "On ne pourra pas avancer"
-    else:                               
-        if case_dupion%10==6:       # Voir si on peut aller à gauche
-            "On ne pourra pas aller à gauche"
-        else:
-            gauche = can1.find_enclosed(x0c-55,y0c+5,x1c-35,y1c+55)
-            if len(gauche)==0:
-                case_possible_ordi.append(1)
-        
-        if case_dupion%10==5:       # Voir si on peut aller à droite
-            "On ne pourra pas aller à droite"
-        else:
-            droite = can1.find_enclosed(x0c+35,y0c+5,x1c+55,y1c+55)
-            if len(droite)==0:
-                case_possible_ordi.append(2)
+    while len(case_possible_ordi) == 0 and len(pions_ordinateur) != 0:
+        # Choix d'un nombre aléatoire
+        a = random.randint(0,len(pions_ordinateur)-1)
+        # Choix d'un pion de l'ordinateur au hasard à l'aide du nombre aléatoire
+        a = pions_ordinateur[a]
 
-    
-    if not case_possible_ordi:      # Déplacement sur une des cases libres, si elle existe
+        # Récupération des coordonnées de ce pion
+        coords_pionc = can1.coords(a)
+        x0c = coords_pionc[0]
+        y0c = coords_pionc[1]
+        x1c = coords_pionc[2]
+        y1c = coords_pionc[3]
+
+        # Récupération de l'identifiant de la case sur laquelle se trouve le pion
+        case_dupion = can1.find_enclosed(x0c-15,y0c-15,x1c+15,y1c+15)
+        case_dupion = case_dupion[0]
+        
+        if case_dupion+5 > 50:          # Voir si on est au bout du damier
+            "On ne pourra pas avancer"
+        else:                               
+            if case_dupion%10==6:       # Voir si on peut aller à gauche
+                "On ne pourra pas aller à gauche"
+            else:
+                gauche = can1.find_enclosed(x0c-55,y0c+5,x1c-35,y1c+55)
+                if len(gauche)==0:
+                    case_possible_ordi.append(1)
+            
+            if case_dupion%10==5:       # Voir si on peut aller à droite
+                "On ne pourra pas aller à droite"
+            else:
+                droite = can1.find_enclosed(x0c+35,y0c+5,x1c+55,y1c+55)
+                if len(droite)==0:
+                    case_possible_ordi.append(2)
+        pions_ordinateur.remove(a)
+
+     # Déplacement sur une des cases libres, si elle existe
         "Les deux cases sont prises, nouvelle tentative"
-        deplacement_ordinateur()
-    else:    
+    if len(case_possible_ordi) != 0:
         d = random.randint(0,len(case_possible_ordi)-1)
         if case_possible_ordi[d]==1:
             case_arrivee=can1.find_enclosed(x0c-70,y0c+30,x1c-30,y1c+70)
@@ -172,50 +184,59 @@ def deplacement_ordinateur():
             print(compteur,":",case_dupion,"-",case_arrivee)
         else:
             "Impossible..."
+    else:
+        print(compteur,": Passe son tour")
+        flag = 3
 
 
 def deplacement_joueur():
+    global flag
     # Récupération des identifiants de chaque pion de l'ordinateur
-    pions_ordinateur = can1.find_withtag("player")
-    # Choix d'un nombre aléatoire
-    a = random.randint(0,len(pions_ordinateur)-1)
-    # Choix d'un pion de l'ordinateur au hasard à l'aide du nombre aléatoire
-    a = pions_ordinateur[a]
-
-    # Récupération des coordonnées de ce pion
-    coords_pionc = can1.coords(a)
-    x0c = coords_pionc[0]
-    y0c = coords_pionc[1]
-    x1c = coords_pionc[2]
-    y1c = coords_pionc[3]
-
-    # Récupération de l'identifiant de la case sur laquelle se trouve le pion
-    case_dupion = can1.find_enclosed(x0c-15,y0c-15,x1c+15,y1c+15)
-    case_dupion = case_dupion[0]
-
+    pions_ordinateur = list(can1.find_withtag("player"))
+    
     case_possible_ordi = []
-    if case_dupion-5 < 1:       # Voir si on est au bout du damier
-        "On ne pourra pas avancer"
-    else:
-        if case_dupion%10==6:  # Voir si on peut aller à gauche
-            "On ne pourra pas aller à gauche"
-        else:
-            gauche = can1.find_enclosed(x0c-55,y0c-55,x1c-35,y1c-5)
-            if len(gauche)==0:
-                case_possible_ordi.append(1)
+    while len(case_possible_ordi) == 0 and len(pions_ordinateur) != 0:
+        # Choix d'un nombre aléatoire
+        a = random.randint(0,len(pions_ordinateur)-1)
+        # Choix d'un pion de l'ordinateur au hasard à l'aide du nombre aléatoire
+        a = pions_ordinateur[a]
+
+
+        # Récupération des coordonnées de ce pion
+        coords_pionc = can1.coords(a)
+        x0c = coords_pionc[0]
+        y0c = coords_pionc[1]
+        x1c = coords_pionc[2]
+        y1c = coords_pionc[3]
+
+        # Récupération de l'identifiant de la case sur laquelle se trouve le pion
+        case_dupion = can1.find_enclosed(x0c-15,y0c-15,x1c+15,y1c+15)
+        case_dupion = case_dupion[0]
         
-        if case_dupion%10==5:   # Voir si on peut aller à droite
-            "On ne pourra pas aller à droite"
+        if case_dupion-5 < 1:       # Voir si on est au bout du damier
+            "On ne pourra pas avancer"
         else:
-            droite = can1.find_enclosed(x0c+35,y0c-55,x1c+55,y1c-5)
-            if len(droite)==0:
-                case_possible_ordi.append(2)
+            if case_dupion%10==6:  # Voir si on peut aller à gauche
+                "On ne pourra pas aller à gauche"
+            else:
+                gauche = can1.find_enclosed(x0c-55,y0c-55,x1c-35,y1c-5)
+                if len(gauche)==0:
+                    case_possible_ordi.append(1)
+            
+            if case_dupion%10==5:   # Voir si on peut aller à droite
+                "On ne pourra pas aller à droite"
+            else:
+                droite = can1.find_enclosed(x0c+35,y0c-55,x1c+55,y1c-5)
+                if len(droite)==0:
+                    case_possible_ordi.append(2)
+
+        pions_ordinateur.remove(a)
                 
     # Déplacement sur une des cases libres, si elle existe
-    if not case_possible_ordi:
+
         "Les deux cases sont prises, nouvelle tentative"
-        deplacement_joueur()
-    else:    
+
+    if len(case_possible_ordi) != 0:
         d = random.randint(0,len(case_possible_ordi)-1)
         if case_possible_ordi[d]==1:
             case_arrivee=can1.find_enclosed(x0c-70,y0c-70,x1c-30,y1c-30)
@@ -229,6 +250,9 @@ def deplacement_joueur():
             print(compteur,":",case_dupion,"-",case_arrivee)
         else:
             "Impossible..."
+    else:
+        print(compteur,": Passe son tour")
+        flag = 3
 
 
 def prise_obligatoire_ordinateur(): # A améliorer
@@ -391,7 +415,7 @@ def prise_obligatoire_joueur():
     else:
         "Pas de prise possible"
 
-def draw(e):
+def draw():
     global flag
     pions_joueur_restant = can1.find_withtag("player")
     pions_ordinateur_restant = can1.find_withtag("computer")
@@ -415,18 +439,19 @@ compteur = 0            # Compteur
 
 # Création du widget principal ("parent") :
 fen1 = Tk()
-fen1.title("Jeu de dames avec deux IA jouant au hasard et prise obligatoire simple")
+fen1.title("Jeu de dames")
 # Création des widgets "enfants" :
 can1 = Canvas(fen1, bg='dark grey', height=500, width=500)
 can1.pack(side=LEFT, padx=5, pady=5)
 
 damier()
-pions()
+pions()         
 
-# Mouseclick event
-can1.bind("<Button 1>",tour_joueur)
-can1.bind("<Button 2>",draw)
-can1.bind("<Button 3>",tour_ordinateur)
+"""
+# Mouseclick event                        ###
+can1.bind("<Button 1>",tour_joueur)       ###    Inutile mais à garder.
+can1.bind("<Button 3>",tour_ordinateur)   ### 
+"""
 
 bou1 = Button(fen1, text='Nouvelle partie', width=12, command=new_game)
 bou1.pack()

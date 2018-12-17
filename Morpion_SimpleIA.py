@@ -15,7 +15,7 @@ def grille():   # Création de la grille
 
 
 def restart():  # Remise à zéro
-    global tour, gagnant
+    global tour, gagnant, entier
     pions = can1.find_all()     # Récupération des identifiants
     for i in pions:
         if i < 10:
@@ -26,6 +26,7 @@ def restart():  # Remise à zéro
             can1.delete(i)      # Suppression des pions
     tour = 1
     gagnant = 0
+    entier = list(can1.find_all())
     
 
 def tour_ordinateur(e):
@@ -120,9 +121,11 @@ def check_winner():
             if (set([1,2,3]).issubset(items)) or (set([4,5,6]).issubset(items)) or (set([7,8,9]).issubset(items)) or (set([1,4,7]).issubset(items)) or (set([2,5,8]).issubset(items)) or (set([3,6,9]).issubset(items)) or (set([1,5,9]).issubset(items)) or (set([3,5,7]).issubset(items)):
                 print("Les rouges gagnent.")
                 gagnant = 1
-        
-        elif tour == 10:
+
+    if gagnant == 0:
+        if tour == 9:
             print("Match nul")
+            gagnant = 1
         
         else:
             print("La partie continue")

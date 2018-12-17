@@ -3,6 +3,8 @@ import random
 
 # Définition des gestionnaires d'événements :
 
+# Bug : Un pion noir en prend un autre quand on lance une nouvelle partie
+
 def new_game():
     delete_pions()
     pions()

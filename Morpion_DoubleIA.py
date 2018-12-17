@@ -16,19 +16,19 @@ def grille():   # Création de la grille
 
 
 def simulation():   # 
-    global tour
-    for i in range (0,10):
+    global tour, gagnant
+    while not gagnant:
         if tour%2==1:
-            piece(i)
+            piece(tour)
             fen1.update()
-            time.sleep(1)
+            time.sleep(0.1)
         else:
-            tour_ordinateur(i)
+            tour_ordinateur(tour)
             fen1.update()
-            time.sleep(1)
+            time.sleep(0.1)
 
 def restart():  # Remise à zéro
-    global tour, gagnant
+    global tour, gagnant, entier
     pions = can1.find_all()     # Récupération des identifiants
     for i in pions:
         if i < 10:
@@ -39,6 +39,7 @@ def restart():  # Remise à zéro
             can1.delete(i)      # Suppression des pions
     tour = 1
     gagnant = 0
+    entier = list(can1.find_all())
     
 
 def tour_ordinateur(e):
@@ -131,11 +132,13 @@ def check_winner():
                 print("Les rouges gagnent.")
                 gagnant = 1
         
-        elif tour == 10:
+    if gagnant == 0:
+        if tour == 9:
             print("Match nul")
+            gagnant = 1
         
         else:
-            print("La partie continue")
+            "La partie continue"
 
 
 #========== Programme principal =============
