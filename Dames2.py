@@ -4,7 +4,10 @@ import random
 import time
 
 
-### Version presentée à M. Hanczar le 21/01 ###
+### Version précédente avec  ###
+        # Affichage du score -> ok ?
+        # Choix du coup qui a le meilleur ratio, pas le plus de visites -> ok ?
+        # Visualisation des sous-arbres -> ok ?
 
 
 # Définition des gestionnaires d'événements :
@@ -334,13 +337,21 @@ class Node: # à modifier...
         self.visits = 0
         self.untriedMoves = state.GetMoves() # future child nodes
         self.playerJustMoved = state.playerJustMoved # the only part of the state that the Node needs later
+
+        self.ratio = 0
+        self.score = 0
+        
+        self.played = False # Pour la fusion
         
     def UCTSelectChild(self):
         """ Use the UCB1 formula to select a child node. Often a constant UCTK is applied so we have
             lambda c: c.wins/c.visits + UCTK * sqrt(2*log(self.visits)/c.visits to vary the amount of
             exploration versus exploitation.
         """
-        s = sorted(self.childNodes, key = lambda c: c.wins/c.visits + sqrt(2*log(self.visits)/c.visits))[-1]
+        for child in self.childNodes:
+            child.score = round(child.wins/child.visits + sqrt(2*log(self.visits)/child.visits), 2)
+        
+        s = sorted(self.childNodes, key = lambda c: c.score)[-1]#c.wins/c.visits + sqrt(2*log(self.visits)/c.visits))#[-1]
         return s
     
     def AddChild(self, m, s):
@@ -357,9 +368,10 @@ class Node: # à modifier...
         """
         self.visits += 1
         self.wins += result
+        self.ratio = self.wins/self.visits
 
     def __repr__(self):
-        return "[M:" + str(self.move) + " W/V:" + str(self.wins) + "/" + str(self.visits) + " U:" + str(self.untriedMoves) + "]"
+        return "[M:" + str(self.move) + " W/V:" + str(self.wins) + "/" + str(self.visits) + " R:" + str(round(self.ratio, 2)) + " S:" + str(self.score) + "]" #+ " U:" + str(self.untriedMoves) + "]" # Prend de la place pour rien
 
     def TreeToString(self, indent):
         s = self.IndentString(indent) + str(self)
@@ -405,11 +417,18 @@ def UCT(rootstate, itermax, verbose = False):
         while node != None: # backpropagate from the expanded node and work back to the root node
             node.Update(state.GetResult(node.playerJustMoved)) # state is terminal. Update node with result from POV of node.playerJustMoved
             node = node.parentNode
-    # Output some information about the tree - can be omitted
-    if (verbose): print (rootnode.TreeToString(0))
-    else: print (rootnode.ChildrenToString())
 
-    return sorted(rootnode.childNodes, key = lambda c: c.visits)[-1].move # return the move that was most visited
+        if compteur == 2: # PERMET D'AFFICHER LE PROCESSUS DE CONSTRUCTION DE L'ARBRE LORS DU SECOND TOUR (PREMIER COUP ORDINATEUR)
+            # Output some information about the tree - can be omitted
+            if (verbose): print (rootnode.TreeToString(0))
+            else: print (rootnode.ChildrenToString())
+
+    if compteur != 2:# AFIN D'EVITER UN DOUBLON A LA FIN DU SECOND TOUR
+        # Output some information about the tree - can be omitted
+        if (verbose): print (rootnode.TreeToString(0))
+        else: print (rootnode.ChildrenToString())
+
+    return sorted(rootnode.childNodes, key = lambda c: c.wins/c.visits)[-1].move # return the move that was most visited  #CHANGEMENT QUI RENVOIE LE MOVE AVEC LE MEILLEUR RATIO
  
 
 def simulation():
@@ -551,7 +570,7 @@ def human(e): # Il y a peut-être des erreurs, à tester !
                     else:
                         "Déplacement impossible"
                     issubset = False
-                elif len(coups[0]) > 2: # Prise obligatoire multiple
+                elif len(coups[0]) > 2: ### Prise obligatoire (multiple ?)
                     a = 0
                     for i in list(coups):
                         if set(prisetable).issubset(i):
@@ -619,7 +638,7 @@ def human(e): # Il y a peut-être des erreurs, à tester !
         print("Le joueur passe son tour")
         draw(flag)   
 
-def draw(e):
+def draw(e): # Redondant ?
     global flag, gagnant
     piece_player1 = can1.find_withtag("human")
     piece_player2 = can1.find_withtag("computer")

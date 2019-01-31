@@ -4,8 +4,22 @@ import random
 import time
 
 
-### Version presentée à M. Hanczar le 21/01 ###
+### Version précédente avec  ###
+        # Fusion des arbres -> ok ?
 
+
+"""
+# Permet de voir chaque instance de Node crée, et donc tous les arbres... 
+import gc
+def ayylmao(e):
+    x = 0
+    #print(len(gc.get_objects()))
+    for obj in gc.get_objects():
+        if isinstance(obj, Node):
+            x += 1
+            print(obj)
+    print("x =", x)
+"""
 
 # Définition des gestionnaires d'événements :
 
@@ -334,13 +348,30 @@ class Node: # à modifier...
         self.visits = 0
         self.untriedMoves = state.GetMoves() # future child nodes
         self.playerJustMoved = state.playerJustMoved # the only part of the state that the Node needs later
+
+        self.ratio = 0
+        self.score = 0
+        
+        self.played = False # Pour la fusion
         
     def UCTSelectChild(self):
         """ Use the UCB1 formula to select a child node. Often a constant UCTK is applied so we have
             lambda c: c.wins/c.visits + UCTK * sqrt(2*log(self.visits)/c.visits to vary the amount of
             exploration versus exploitation.
         """
-        s = sorted(self.childNodes, key = lambda c: c.wins/c.visits + sqrt(2*log(self.visits)/c.visits))[-1]
+        for child in self.childNodes:
+            child.score = round(child.wins/child.visits + sqrt(2*log(self.visits)/child.visits), 2)
+        
+        s = sorted(self.childNodes, key = lambda c: c.score)[-1]#c.wins/c.visits + sqrt(2*log(self.visits)/c.visits))#[-1]
+        return s
+
+    def UCTSelectLastMove(self):
+        """ Use the UCB1 formula to select a child node. Often a constant UCTK is applied so we have
+            lambda c: c.wins/c.visits + UCTK * sqrt(2*log(self.visits)/c.visits to vary the amount of
+            exploration versus exploitation.
+        """
+        #print("self.childNodes =", self.childNodes)
+        s = sorted(self.childNodes, key = lambda c: c.played)[-1]
         return s
     
     def AddChild(self, m, s):
@@ -357,9 +388,10 @@ class Node: # à modifier...
         """
         self.visits += 1
         self.wins += result
+        self.ratio = self.wins/self.visits
 
     def __repr__(self):
-        return "[M:" + str(self.move) + " W/V:" + str(self.wins) + "/" + str(self.visits) + " U:" + str(self.untriedMoves) + "]"
+        return "[M:" + str(self.move) + " W/V:" + str(self.wins) + "/" + str(self.visits) + " R:" + str(round(self.ratio, 2)) + " S:" + str(self.score) + " LM:" + str(self.played) + "]" #+ " U:" + str(self.untriedMoves) + "]" # Prend de la place pour rien
 
     def TreeToString(self, indent):
         s = self.IndentString(indent) + str(self)
@@ -384,12 +416,15 @@ def UCT(rootstate, itermax, verbose = False):
     """ Conduct a UCT search for itermax iterations starting from rootstate.
         Return the best move from the rootstate.
         Assumes 2 alternating players (player 1 starts), with game results in the range [0.0, 1.0]."""
-    
-    rootnode = Node(state = rootstate)
+    global change
+
     for i in range(itermax):
         node = rootnode
         state = rootstate.Clone()
         # Select
+        for i in range (2, compteur):
+            node = node.UCTSelectLastMove()
+        
         while node.untriedMoves == [] and node.childNodes != []: # node is fully expanded and non-terminal
             node = node.UCTSelectChild()
             state.DoMove(node.move)
@@ -405,15 +440,30 @@ def UCT(rootstate, itermax, verbose = False):
         while node != None: # backpropagate from the expanded node and work back to the root node
             node.Update(state.GetResult(node.playerJustMoved)) # state is terminal. Update node with result from POV of node.playerJustMoved
             node = node.parentNode
-    # Output some information about the tree - can be omitted
-    if (verbose): print (rootnode.TreeToString(0))
-    else: print (rootnode.ChildrenToString())
-
-    return sorted(rootnode.childNodes, key = lambda c: c.visits)[-1].move # return the move that was most visited
+        
+        #if compteur == 2: # PERMET D'AFFICHER LE PROCESSUS DE CONSTRUCTION DE L'ARBRE LORS DU SECOND TOUR (PREMIER COUP ORDINATEUR)
+            # Output some information about the tree - can be omitted
+        if (verbose): print (rootnode.TreeToString(0)) #rootnode
+        else: print (rootnode.ChildrenToString()) #rootnode
+        
+    
+    node = rootnode
+    for i in range (2, compteur):
+            node = node.UCTSelectLastMove()
+    
+    change = sorted(node.childNodes, key = lambda c: c.wins/c.visits)[-1]
+    change.played = True
+    
+    #if compteur != 2:# AFIN D'EVITER UN DOUBLON A LA FIN DU SECOND TOUR
+        # Output some information about the tree - can be omitted"""
+    if (verbose): print (node.TreeToString(0))
+    else: print (node.ChildrenToString())
+    
+    return sorted(node.childNodes, key = lambda c: c.wins/c.visits)[-1].move # return the move that was most visited  #CHANGEMENT QUI RENVOIE LE MOVE AVEC LE MEILLEUR RATIO
  
 
 def simulation():
-    global flag, compteur
+    global flag, compteur, rootnode
     while state.GetMoves() != []:
         if flag == 0:
             compteur += 1
@@ -421,6 +471,15 @@ def simulation():
             m = random.choice(coups)
             deplacement_pion(m)
             state.DoMove(m)                             # Actualisation
+
+            if compteur % 2 == 1:
+                if compteur != 1:
+                    for child in change.childNodes:
+                        if child.move == m:
+                            child.played = True
+                else:
+                    rootnode = Node(None, None, state)
+            
             flag = 1
         elif flag == 1:
             computer(flag)
@@ -503,9 +562,12 @@ def deplacement_pion(m):    # Déplacement sur l'interface graphique
                 
     else:
         "Impossible"
+    # ...
+
+   
 
 def human(e): # Il y a peut-être des erreurs, à tester !
-    global deplacement, jeton, compteur, flag, coups, move0, move2, prisetable, manoury, issubset, isequal
+    global deplacement, jeton, compteur, flag, coups, move0, move2, prisetable, manoury, issubset, isequal, rootnode
     if state.GetMoves() != []:
         if flag == 0:
             "C'est le tour des blancs !"
@@ -545,13 +607,22 @@ def human(e): # Il y a peut-être des erreurs, à tester !
                         can1.coords(jeton,x0+10,y0+10,x0+40,y0+40)
                         print(compteur,":",move0,"-",move2,"\n")
                         move = [move0, move2]
+
                         state.DoMove(move)
+                        
+                        if compteur != 1:
+                            for child in change.childNodes:
+                                if child.move == move:
+                                    child.played = True
+                        else:
+                            rootnode = Node(None, None, state)   
+                        
                         deplacement = 0
                         flag = 1
                     else:
                         "Déplacement impossible"
                     issubset = False
-                elif len(coups[0]) > 2: # Prise obligatoire multiple
+                elif len(coups[0]) > 2: ### Prise obligatoire (multiple ?)
                     a = 0
                     for i in list(coups):
                         if set(prisetable).issubset(i):
@@ -604,7 +675,16 @@ def human(e): # Il y a peut-être des erreurs, à tester !
                             prisetable.pop(0)
                             prisetable.pop(0)
                         print(manoury + "\n")
+
                         state.DoMove(move)
+
+                        if compteur != 1:
+                            for child in change.childNodes:
+                                if child.move == move:
+                                    child.played = True
+                        else:
+                            rootnode = Node(None, None, state)
+                                
                         deplacement = 0
                         flag = 1
                         
@@ -619,7 +699,7 @@ def human(e): # Il y a peut-être des erreurs, à tester !
         print("Le joueur passe son tour")
         draw(flag)   
 
-def draw(e):
+def draw(e): # Redondant ?
     global flag, gagnant
     piece_player1 = can1.find_withtag("human")
     piece_player2 = can1.find_withtag("computer")
@@ -636,7 +716,7 @@ def draw(e):
     return gagnant
 
 def UCTPlayGame(sim):
-    global flag, deplacement, compteur, fen1, can1, state
+    global flag, deplacement, compteur, fen1, can1, state, rootnode
     #============= Programme principal =============
 
     # Les variables suivantes seront utilisées de manière globale :
