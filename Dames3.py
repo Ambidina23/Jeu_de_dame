@@ -440,12 +440,12 @@ def UCT(rootstate, itermax, verbose = False):
         while node != None: # backpropagate from the expanded node and work back to the root node
             node.Update(state.GetResult(node.playerJustMoved)) # state is terminal. Update node with result from POV of node.playerJustMoved
             node = node.parentNode
-        
-        #if compteur == 2: # PERMET D'AFFICHER LE PROCESSUS DE CONSTRUCTION DE L'ARBRE LORS DU SECOND TOUR (PREMIER COUP ORDINATEUR)
+        """
+        if compteur == 2: # PERMET D'AFFICHER LE PROCESSUS DE CONSTRUCTION DE L'ARBRE LORS DU SECOND TOUR (PREMIER COUP ORDINATEUR)
             # Output some information about the tree - can be omitted
-        if (verbose): print (rootnode.TreeToString(0)) #rootnode
-        else: print (rootnode.ChildrenToString()) #rootnode
-        
+            if (verbose): print (rootnode.TreeToString(0)) #rootnode
+            else: print (rootnode.ChildrenToString()) #rootnode
+        """
     
     node = rootnode
     for i in range (2, compteur):
@@ -454,10 +454,10 @@ def UCT(rootstate, itermax, verbose = False):
     change = sorted(node.childNodes, key = lambda c: c.wins/c.visits)[-1]
     change.played = True
     
-    #if compteur != 2:# AFIN D'EVITER UN DOUBLON A LA FIN DU SECOND TOUR
+    if compteur != 2:# AFIN D'EVITER UN DOUBLON A LA FIN DU SECOND TOUR
         # Output some information about the tree - can be omitted"""
-    if (verbose): print (node.TreeToString(0))
-    else: print (node.ChildrenToString())
+        if (verbose): print (node.TreeToString(0))
+        else: print (node.ChildrenToString())
     
     return sorted(node.childNodes, key = lambda c: c.wins/c.visits)[-1].move # return the move that was most visited  #CHANGEMENT QUI RENVOIE LE MOVE AVEC LE MEILLEUR RATIO
  
@@ -494,7 +494,7 @@ def computer(e):
         compteur += 1
         if state.GetMoves() != []:
             print("Coups possibles de l'ordinateur :", state.GetMoves())
-            m = UCT(rootstate = state, itermax = 100, verbose = True) #...
+            m = UCT(rootstate = state, itermax = 1000, verbose = False) #...
             print("Best move :", m)
             deplacement_pion(m)    # déplacer un pion
             state.DoMove(m)                             # Actualisation
@@ -744,7 +744,7 @@ def UCTPlayGame(sim):
 
     # Mouseclick event
     can1.bind("<Button 1>", human)
-    can1.bind("<Button 2>", draw)
+    can1.bind("<Button 2>", computer)
     can1.bind("<Button 3>", computer)
 
     bou1 = Button(fen1, text='Simulation', width=12, command=simulation)
